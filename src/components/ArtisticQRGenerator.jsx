@@ -4,13 +4,13 @@ import './ArtisticQRGenerator.css';
 
 const DEFAULT_OPTIONS = {
   size: 800,
-  moduleStyle: 'square',       // square = 셀 100% 채움, 스캔 신뢰도 높음
+  moduleStyle: 'rounded',      // 둥근 도트
   errorCorrection: 'H',
   dotScale: 1.0,               // 셀 전체 채움
-  eyeStyle: 'square',
+  eyeStyle: 'circle',          // 원형 파인더
   colorMode: 'image',          // 'image' | 'solid'
   solidDarkColor: '#000000',
-  bgOpacity: 0.8,
+  bgOpacity: 1.0,              // 배경 노출도 100%
   dotOpacity: 1.0,
   blendMode: 'overlay',        // 'multiply' | 'overlay' | 'darken'
   adaptiveSize: 1.0,           // 전체 적응형 도트 크기
