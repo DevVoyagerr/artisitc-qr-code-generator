@@ -167,8 +167,8 @@ void main() {
       }
       finderResult = clamp(fVivid, 0.0, 1.0);
     } else {
-      // light 부분: 최소 45% 흰색 (파인더 light는 확실히 밝게)
-      finderResult = mix(imageColor, vec3(1.0), max(0.85 * (1.0 - u_bgOpacity), 0.45));
+      // light 부분: 최소 30% 흰색 (파인더 light는 약간 더 밝게)
+      finderResult = mix(imageColor, vec3(1.0), max(0.85 * (1.0 - u_bgOpacity), 0.30));
     }
 
     gl_FragColor = vec4(finderResult, 1.0);
@@ -180,8 +180,8 @@ void main() {
   float isDark = texture2D(u_qrMatrix, qrSampleUV).r;
 
   // ─── Light 모듈: 이미지를 흰색 방향으로 블렌딩 ──────────────
-  // bgOpacity=0 → 85% 흰색, bgOpacity=1 → 최소 45% 흰색 (스캔 보장)
-  float whiteBlend = max(0.85 * (1.0 - u_bgOpacity), 0.45);
+  // bgOpacity=0 → 85% 흰색, bgOpacity=1 → 최소 25% 흰색
+  float whiteBlend = max(0.85 * (1.0 - u_bgOpacity), 0.25);
   vec3 lightColor = mix(imageColor, vec3(1.0), whiteBlend);
 
   if (isDark < 0.5) {
