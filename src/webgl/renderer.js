@@ -57,7 +57,7 @@ export class WebGLRenderer {
       'u_image', 'u_qrMatrix', 'u_moduleCount', 'u_quietZone',
       'u_dotScale', 'u_moduleStyle', 'u_colorMode', 'u_solidColor',
       'u_eyeStyle', 'u_bgOpacity', 'u_dotOpacity', 'u_blendMode',
-      'u_adaptiveSize', 'u_finderColor', 'u_useFinderColor',
+      'u_adaptiveSize', 'u_finderColor', 'u_useFinderColor', 'u_scannerMode',
     ];
     for (const name of uniforms) {
       this.loc[name] = gl.getUniformLocation(this.program, name);
@@ -136,6 +136,7 @@ export class WebGLRenderer {
       adaptiveSize = 0.5,
       finderColor = [0, 0, 0],
       useFinderColor = 0,
+      scannerMode = 0,
     } = options;
 
     const gl = this.gl;
@@ -167,6 +168,7 @@ export class WebGLRenderer {
     gl.uniform1f(this.loc.u_adaptiveSize, adaptiveSize);
     gl.uniform3fv(this.loc.u_finderColor, finderColor);
     gl.uniform1f(this.loc.u_useFinderColor, useFinderColor);
+    gl.uniform1f(this.loc.u_scannerMode, scannerMode);
 
     gl.clearColor(1, 1, 1, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);

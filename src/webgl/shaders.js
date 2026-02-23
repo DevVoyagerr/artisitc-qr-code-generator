@@ -34,6 +34,7 @@ uniform float u_blendMode;      // 0=multiply, 1=overlay, 2=darken
 uniform float u_adaptiveSize;   // 0=비활성, 1=전체 적응형 도트 크기
 uniform vec3 u_finderColor;     // 사용자 지정 finder 색상
 uniform float u_useFinderColor; // 0=이미지 자동, 1=사용자 지정
+uniform float u_scannerMode;    // 0=아티스틱, 1=스캐너 호환
 
 // ─── 밝기 계산 ─────────────────────────────────────────────
 float getLuminance(vec3 c) {
@@ -143,6 +144,12 @@ void main() {
     vec4 fc = renderFinder(cellIndex, cellUV, u_moduleCount, u_eyeStyle);
     float fcLum = getLuminance(fc.rgb);
 
+    // 스캐너 호환 모드: 순수 흑백 파인더 (이미지 블렌딩 제거)
+    if (u_scannerMode > 0.5) {
+      gl_FragColor = fc;
+      return;
+    }
+
     vec3 finderResult;
     if (fcLum < 0.5) {
       // dark 부분: 이미지 색상 유지하되 매우 어둡게 (파인더는 스캐너 감지 핵심)
@@ -180,8 +187,9 @@ void main() {
   float isDark = texture2D(u_qrMatrix, qrSampleUV).r;
 
   // ─── Light 모듈: 이미지를 흰색 방향으로 블렌딩 ──────────────
-  // bgOpacity=0 → 85% 흰색, bgOpacity=1 → 최소 25% 흰색
-  float whiteBlend = max(0.85 * (1.0 - u_bgOpacity), 0.25);
+  // bgOpacity=0 → 85% 흰색, bgOpacity=1 → 최소 25% 흰색 (스캐너모드: 55%)
+  float minWhiteBlend = u_scannerMode > 0.5 ? 0.55 : 0.25;
+  float whiteBlend = max(0.85 * (1.0 - u_bgOpacity), minWhiteBlend);
   vec3 lightColor = mix(imageColor, vec3(1.0), whiteBlend);
 
   if (isDark < 0.5) {
@@ -191,16 +199,18 @@ void main() {
 
   // ─── Dark 모듈: 이미지를 어둡게 ─────────────────────────────
 
-  // 적응형 도트 크기
+  // 적응형 도트 크기 (스캐너모드: 최소 scale 0.75로 클램프)
   float cellLum = getLuminance(imageColor);
   float scaleFactor = mix(1.0, mix(1.15, 0.7, cellLum), u_adaptiveSize);
-  float adaptedScale = clamp(u_dotScale * scaleFactor, 0.5, 1.0);
+  float minScale = u_scannerMode > 0.5 ? 0.75 : 0.5;
+  float adaptedScale = clamp(u_dotScale * scaleFactor, minScale, 1.0);
 
   float sdf = moduleSDF(cellUV, u_moduleStyle, adaptedScale);
 
-  // 안티앨리어싱
+  // 안티앨리어싱 (스캐너모드: 범위 1/4로 축소 → 거의 바이너리 엣지)
   float pixelSize = 1.0 / (u_moduleCount * (qzEnd - qzStart));
-  float aa = smoothstep(pixelSize, -pixelSize, sdf);
+  float aaRange = u_scannerMode > 0.5 ? pixelSize * 0.25 : pixelSize;
+  float aa = smoothstep(aaRange, -aaRange, sdf);
 
   // 도트 바깥(갭) = light 색상
   if (aa <= 0.0) {
@@ -227,10 +237,11 @@ void main() {
       vivid = clamp(vivid, 0.0, 1.0);
     }
 
-    // 밝기 조절: lightColor와 최소 대비 0.55 확보
+    // 밝기 조절: lightColor와 최소 대비 확보 (스캐너모드: 0.75)
+    float contrastThreshold = u_scannerMode > 0.5 ? 0.75 : 0.55;
     float vividLum = getLuminance(vivid);
-    if (lightLum - vividLum < 0.55 && vividLum > 0.01) {
-      float targetLum = max(lightLum - 0.55, 0.05);
+    if (lightLum - vividLum < contrastThreshold && vividLum > 0.01) {
+      float targetLum = max(lightLum - contrastThreshold, 0.05);
       vivid = vivid * (targetLum / vividLum);
     }
     dotColor = clamp(vivid, 0.0, 1.0);

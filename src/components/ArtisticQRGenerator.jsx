@@ -16,6 +16,7 @@ const DEFAULT_OPTIONS = {
   adaptiveSize: 1.0,           // 전체 적응형 도트 크기
   finderColor: '#cc0000',
   useFinderColor: false,
+  scannerMode: false,
 };
 
 export default function ArtisticQRGenerator() {
@@ -292,6 +293,23 @@ export default function ArtisticQRGenerator() {
               value={options.size}
               onChange={e => handleOptionChange('size', parseInt(e.target.value))}
               className="aqr-range" />
+          </div>
+
+          {/* 스캐너 호환 모드 */}
+          <div className="aqr-section">
+            <div className="aqr-scanner-toggle-row">
+              <div>
+                <label className="aqr-label" style={{ marginBottom: 0 }}>스캐너 호환 모드</label>
+                <p className="aqr-desc" style={{ marginBottom: 0 }}>
+                  산업용 바코드 스캐너 인식률을 높입니다. 파인더 순수 흑백, 대비 강화, 엣지 선명화.
+                </p>
+              </div>
+              <label className="aqr-toggle">
+                <input type="checkbox" checked={options.scannerMode}
+                  onChange={e => handleOptionChange('scannerMode', e.target.checked)} />
+                <span className="aqr-toggle-slider" />
+              </label>
+            </div>
           </div>
 
           <button className="aqr-generate-btn" onClick={handleGenerate}

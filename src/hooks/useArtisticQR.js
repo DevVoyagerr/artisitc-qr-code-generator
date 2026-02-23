@@ -157,6 +157,7 @@ export function useArtisticQR() {
       adaptiveSize = 0.5,
       finderColor = '#000000',
       useFinderColor = false,
+      scannerMode = false,
     } = options;
 
     // 1. QR 매트릭스 생성 (직접 구현 엔진)
@@ -225,6 +226,7 @@ export function useArtisticQR() {
           adaptiveSize,
           finderColor: hexToNormalized(finderColor),
           useFinderColor: useFinderColor ? 1 : 0,
+          scannerMode: scannerMode ? 1 : 0,
         },
       });
 
