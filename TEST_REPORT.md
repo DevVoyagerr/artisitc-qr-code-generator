@@ -9,8 +9,8 @@
 | QR 디코더 | ZXing WASM 2.2.4, jsQR 1.4.0 |
 | 렌더링 | WebGL (실제 GPU, preserveDrawingBuffer) |
 | QR 텍스트 | `https://example.com` |
-| 오류 정정 | H (30%) |
-| 출력 크기 | 500px (pixel tests), 600px (decode tests) |
+| 오류 정정 | H (30%), + L/M/Q 별도 검증 |
+| 출력 크기 | 500px (pixel tests), 600px (decode tests), 800px (comprehensive) |
 
 ## 테스트 방식
 
@@ -31,15 +31,25 @@ WebGL `gl.readPixels()`로 렌더링 결과의 특정 좌표 픽셀값을 직접
 - **jsQR**: 독립 JS 디코더로 교차 검증
 - **이미지 3종**: 대각선 그라데이션, 단색 오렌지(#ff6600), 고채도 체커 패턴
 
+### 3. 포괄적 검증 (`comprehensive-verification.test.js`)
+
+ISO 18004 대비 비율, quiet zone, 인쇄 시뮬레이션, QR 버전별·EC 레벨별 디코드 검증.
+
+- **대비 측정**: data 영역 모듈의 평균 dark/light luminance → contrast ratio, PCS
+- **인쇄 시뮬레이션**: JPEG 압축(50%/70%), 해상도 축소(25%/50%), 가우시안 블러(1px/2px), 복합 열화
+- **QR 버전**: short("Hi"), medium(URL), long(긴 URL+params) — Version 1~7+
+- **EC 레벨**: L/M/Q/H 전수 검증 + 복합 열화 내성
+
 ## 테스트 결과
 
 ```
- ✓ tests/scanner-mode.test.js     (14 tests)  159ms
- ✓ tests/decode-verification.test.js (15 tests) 656ms
+ ✓ tests/comprehensive-verification.test.js (22 tests)  673ms
+ ✓ tests/scanner-mode.test.js               (14 tests)  103ms
+ ✓ tests/decode-verification.test.js         (15 tests)  318ms
 
- Test Files  2 passed (2)
-       Tests  29 passed (29)
-    Duration  3.79s
+ Test Files  3 passed (3)
+       Tests  51 passed (51)
+    Duration  2.88s
 ```
 
 ### 1. 픽셀 레벨 검증 (14/14 PASS)
@@ -129,6 +139,55 @@ WebGL `gl.readPixels()`로 렌더링 결과의 특정 좌표 픽셀값을 직접
 |------|--------|------|
 | bgOpacity=1.0 + adaptiveSize=1.0 + checker | ZXing FixedThreshold | **PASS** |
 | gradient + 4개 binarizer 전부 | ZXing ALL | **≥3/4 PASS** |
+
+### 3. 포괄적 검증 (22/22 PASS)
+
+#### 3-1. ISO 18004 대비 비율
+
+| 테스트 | 기준 | 결과 |
+|--------|------|------|
+| contrast ratio ≥ 3.0 (ISO 최소) | scanner ON + gradient | **PASS** |
+| contrast ratio ≥ 4.0 (ISO 권장) | scanner ON + gradient | **PASS** |
+| PCS ≥ 0.37 (Print Contrast Signal) | scanner ON + gradient | **PASS** |
+| ON contrast > OFF contrast | ON/OFF 비교 | **PASS** |
+
+#### 3-2. Quiet Zone 순수 흰색
+
+| 테스트 | 기준 | 결과 |
+|--------|------|------|
+| scanner ON: 상단 QZ luminance ≥ 0.99 | 전체 픽셀 | **PASS** |
+| scanner OFF: 좌측 QZ luminance ≥ 0.99 | 기존 동작 유지 | **PASS** |
+
+#### 3-3. 인쇄 시뮬레이션
+
+| 열화 조건 | 디코더 | 결과 |
+|-----------|--------|------|
+| JPEG 70% | ZXing FixedThreshold | **PASS** |
+| JPEG 50% | ZXing FixedThreshold | **PASS** |
+| 해상도 50% (300→150 dpi) | ZXing FixedThreshold | **PASS** |
+| 해상도 25% (300→75 dpi) | ZXing FixedThreshold | **PASS** |
+| 가우시안 블러 1px | ZXing FixedThreshold | **PASS** |
+| 가우시안 블러 2px | ZXing FixedThreshold | **PASS** |
+| 복합: JPEG 70% + 50% 축소 + 블러 1px | ZXing FixedThreshold | **PASS** |
+
+#### 3-4. QR 버전별
+
+| 데이터 | 버전 | 디코드 | JPEG 70% | 결과 |
+|--------|------|--------|----------|------|
+| "Hi" | Version 1~2 | 성공 | 성공 | **PASS** |
+| "https://example.com" | Version 3~4 | 성공 | 성공 | **PASS** |
+| 긴 URL+params (95자) | Version 7+ | 성공 | 성공 | **PASS** |
+| 전체 JPEG 인쇄 시뮬레이션 | 3/3 통과 | — | — | **PASS** |
+
+#### 3-5. 오류 정정 레벨별
+
+| EC 레벨 | 디코드 | 복합 열화 | 결과 |
+|---------|--------|-----------|------|
+| L (7%) | 성공 | 성공 | **PASS** |
+| M (15%) | 성공 | 성공 | **PASS** |
+| Q (25%) | 성공 | 성공 | **PASS** |
+| H (30%) | 성공 | 성공 | **PASS** |
+| 전체 복합 열화 | 4/4 통과 | — | **PASS** |
 
 ## 발견 사항
 
